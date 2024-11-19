@@ -1,0 +1,1125 @@
+---
+title: "BMI and Colorectal Cancer"
+subtitle: "BMIN503/EPID600 Final Project"
+author: "Antonia Angeli Gazola"
+format: html
+editor: visual
+number-sections: true
+embed-resources: true
+---
+
+```{css}
+#| echo: false
+p {
+  text-align: justify
+}
+```
+
+------------------------------------------------------------------------
+
+# Overview {#sec-overview}
+
+In my project, I aim to investigate the association between Body Mass Index (BMI) and the age of onset of colorectal cancer. Given the rising incidence of early-onset colorectal cancer and the potential role of lifestyle factors like diet and obesity, I plan to explore my hypothesis that higher BMI may be linked to an earlier onset of colorectal cancer in patients. To address this, I will analyze data from the Colorectal Cancer (MSK, JNCI 2021) dataset, available on cBioPortal, which includes detailed patient information.
+
+To strengthen my approach, I consulted Dr. Gary Weissman, an Assistant Professor in Pulmonary and Critical Care Medicine and Informatics, who provided guidance on refining research questions, dataset selection, and data analysis methods from a clinical perspective. Nicholas Bishop, a Clinical Research Coordinator, offered valuable advice on methodological approaches to working with the dataset and data visualization techniques. Both were instrumental in shaping the project’s direction and execution.
+
+This is my Final Project repository (forked): <https://github.com/angeligazola/BMIN503_Final_Project>
+
+# Introduction {#sec-introduction}
+
+Globally, colorectal cancer (CRC) trends are changing. While rates have stabilized or declined in individuals over 50 in high-income countries, they are increasing among those under 50 for reasons that remain unclear. This shift highlights the need to study risk factors specific to younger CRC patients, especially modifiable ones like obesity. Although obesity is a known risk factor for CRC, its role in younger populations is less understood, leaving critical gaps in knowledge about the impact of Body Mass Index (BMI) on early-onset CRC. Recent studies suggest a potential link between higher BMI and earlier CRC onset, indicating that obesity may contribute to CRC development in young adults. However, the complex interplay of factors remains unclear, and further research is essential to inform prevention strategies.
+
+To explore this, I will analyze the MSK Colorectal Cancer dataset (JNCI, 2021), which includes 1,516 CRC cases across a wide age range. This dataset provides detailed patient information, allowing me to examine the relationship between BMI and age at diagnosis and assess whether this association varies based on demographic or clinical factors.
+
+This research integrates insights from epidemiology, data science, biostatistics, and oncology to examine the role of BMI in younger CRC cases. Dr. Weissman’s clinical and biostatistical expertise, along with Nicholas Bishop’s methodological guidance, were invaluable in refining and strengthening this study. By investigating a potential association between BMI and early-onset CRC, this research aims to identify potential links that could inform personalized prevention strategies for at-risk populations.
+
+# Methods {#sec-methods}
+
+For this project, I am using the MSK Colorectal Cancer dataset (MSK, JNCI 2021) from cBioPortal, which includes targeted sequencing data for 1,516 samples from 818 patients with early-onset and 698 patients with average-onset colorectal cancer. This dataset provides patient information, including BMI, age at diagnosis, tumor characteristics, and relevant medical history (Reference: PMID: 34405229).
+
+The analysis will be structured in three main sections: descriptive statistics, linear regression analysis and logistic regression analysis. During the methodology, each step of the analysis will be described, keeping the description of the results to the {#sec-results} section
+
+## Descriptive Statistics:
+
+This section contains the initial exploratory analysis to understand data distribution and variable relationships.
+
+-   **Adding Packages**:
+
+```{r warning=FALSE, message=FALSE}
+
+## Adding the packages that will be used
+
+library(vroom)
+library(dplyr)
+library(gtsummary)
+library(gt)
+library(ggplot2)
+library(gridExtra)
+library(patchwork)
+library(pROC)
+library(nnet)
+library(tidymodels)
+library(modelsummary)
+library(naniar)
+library(plotly)
+library(car)
+library(yardstick)
+
+```
+
+-   **Data loading, variable renaming and summarization**:
+
+```{r}
+
+## Reading the Dataset 
+
+
+MSK_colorectal_dataset <- vroom(
+    "/Users/antoniaag/Desktop/crc_eo_2020_clinical_data.tsv",
+    col_types = cols(
+        `Study ID` = col_character(),
+  `Patient ID` = col_character(),
+  `Sample ID` = col_character(),
+  `Age at Diagnosis` = col_double(),
+  `Age Groups` = col_character(),
+  `Age Subgroups` = col_character(),
+  `BMI` = col_double(),
+  `BMI categories` = col_character(),
+  `Cancer Type` = col_character(),
+  `Cancer Type Detailed` = col_character(),
+  `Impact TMB Score` = col_double(),
+  `Diabetes Mellitus History` = col_character(),
+  `First Symptoms at Diagnosis` = col_character(),
+  `Fraction Genome Altered` = col_double(),
+  `Gene Panel` = col_character(),
+  `Hypertension History` = col_character(),
+  Metastasectomy = col_double(),
+  `Metastatic Site` = col_character(),
+  `Molecular Subtype` = col_character(),
+  `MSI Score` = col_double(),
+  `MSI Type` = col_character(),
+  `Mutation Count` = col_double(),
+  `Oncotree Code` = col_character(),
+  `Overall Survival (Months) from Dx of Met` = col_double(),
+  `Overall Survival Status` = col_character(),
+  `Primary Tumor Location` = col_character(),
+  PUMP = col_double(),
+  `Race Category` = col_character(),
+  `Sample Class` = col_character(),
+  `Number of Samples Per Patient` = col_double(),
+  `Sample coverage` = col_double(),
+  `Sample Type` = col_character(),
+  `Sex` = col_character(),
+  `Smoker Status` = col_character(),
+  `Smoking history` = col_character(),
+  `Somatic Status` = col_character(),
+  `Stage at Diagnosis` = col_character(),
+  `First Line Treatment at Metastasis` = col_character(),
+  `Tumor Grade` = col_character(),
+  `Tumor Purity` = col_double(),
+  `Used for Response` = col_double(),
+  `Used in Clinical Analysis` = col_double(),
+  `Used in Genomic MSS Analysis` = col_double(),
+  `Used in Genomic MSS Met Survival Analysis` = col_double()), show_col_types = FALSE)
+
+head(MSK_colorectal_dataset) ## this will show the first rows of the dataset
+
+```
+
+This chunk loads the MSK colorectal dataset from a TSV (tab-separated values) file in my desktop (downloaded from cBioPortal). It uses the vroom function to quickly read the data into R. The column types (such as numbers or text) are set for each variable to make sure the data is read correctly (eg.: character, double), avoiding mistakes when reading the file.
+
+```{r warning=FALSE, results='asis'}
+
+## Descriptive statistics -- generating a summary table of key variables.
+
+
+## Renaming some variables into MSK_colorectal_dataset_rename to make the summary table clearer
+
+MSK_colorectal_dataset_rename <- MSK_colorectal_dataset |> 
+  mutate(
+    `Age Groups` = case_when(
+      `Age Groups` == "AO" ~ "Average-onset (AO)",
+      `Age Groups` == "EO" ~ "Early-onset (EO)",
+      TRUE ~ `Age Groups`
+    ),
+    `Age Subgroups` = case_when(
+      `Age Subgroups` == "AO" ~ "Average-onset",
+      `Age Subgroups` == "Over_35" ~ "Early-onset 36-49 years",
+      `Age Subgroups` == "Under_35" ~ "Early-onset below 35 years",
+      TRUE ~ `Age Subgroups`
+    ),
+    `BMI categories` = case_when(
+      `BMI categories` == "NW" ~ "Normal (NW)",
+      `BMI categories` == "OB" ~ "Obese (OB)",
+      `BMI categories` == "OW" ~ "Overweight (OW)",
+      `BMI categories` == "UW" ~ "Underweight (UW)",
+      `BMI categories` %in% c("Unk", "Unknown") ~ NA,
+      TRUE ~ `BMI categories`
+    ),
+    `Diabetes Mellitus History` = case_when(
+      `Diabetes Mellitus History` == "0" ~ "No",
+      `Diabetes Mellitus History` %in% c("1", "DM") ~ "Yes"
+    ),
+    `Hypertension History` = case_when(
+      `Hypertension History` == "0" ~ "No",
+      `Hypertension History` %in% c("1", "Hypertension") ~ "Yes"
+    ),
+    `Race Category` = case_when(
+      `Race Category` == "ASIAN-FAR EAST/INDIAN SUBCONT" ~ "Asian or Indian subcontinent",
+      `Race Category` == "BLACK OR AFRICAN AMERICAN" ~ "Black or African American",
+      `Race Category` == "NATIVE AMERICAN-AM IND/ALASKA" ~ "Native American or Alaska Native",
+      `Race Category` == "WHITE" ~ "White",
+      `Race Category` %in% c("UNKNOWN_OTHER", "Unknown") ~ NA
+    ),
+    `Tumor Grade` = case_when(
+      `Tumor Grade` == "mod-diff" ~ "Moderately differentiated",
+      `Tumor Grade` == "mod-poorly-diff" ~ "Moderately poorly differentiated",
+      `Tumor Grade` == "poorly-diff" ~ "Poorly differentiated",
+      `Tumor Grade` == "well-diff" ~ "Well-differentiated",
+      `Tumor Grade` == "well-mod-diff" ~ "Well moderately differentiated",
+      `Tumor Grade` %in% c("Unk", "Unknown") ~ NA
+    ),
+    `Metastatic Site` = case_when(
+      `Metastatic Site` %in% c("Abdomen", "Abdominal Wall", "Mesentery", "Omentum", "Paracolic Gutter", "Pelvis", "Pelvic Nodule", "Peritoneal Fluid", "Peritoneal Implant", "Peritoneum", "Peritonuem", "Retroperitoneum") ~ "Abdomen/Abdominal Wall or Pelvis",
+      
+      `Metastatic Site` %in% c("Adrenal", "Adrenal Gland") ~ "Adrenal Gland",
+      `Metastatic Site` %in% c("Bone", "Chest Wall", "Paraspinal Mass", "Diaphragm", "Sacral Mass", "Skull base", "Soft Tissue", "Spine") ~ "Musculoskeletal System",
+      `Metastatic Site` %in% c("Brain", "Cerebellum", "Left Frontal Brain") ~ "Central Nervous System",
+      `Metastatic Site` %in% c("Kidney", "Ureter") ~ "Genitourinary Tract",
+      `Metastatic Site` %in% c("Liver", "liver") ~ "Hepatic",
+      `Metastatic Site` %in% c("Lung", "Pleura") ~ "Lungs and Pleura",
+      `Metastatic Site` %in% c("Lymph node", "Lymph Node") ~ "Nodal",
+      `Metastatic Site` %in% c("Ovary", "Vagina", "Vulva") ~ "Reproductive System",
+      `Metastatic Site` == "Pancreas"~ "Pancreatic",
+      `Metastatic Site` %in% c("Rectum", "Sigmoid Colon", "Small Bowel", "Anus") ~ "Gastrointestinal Tract",
+      `Metastatic Site` == "Skin" ~ "Skin",
+      `Metastatic Site` == "Spleen" ~ "Splenic",
+      `Metastatic Site` == "Unknown" ~ NA
+      ),
+    `Molecular Subtype` = case_when(
+      `Molecular Subtype` %in% c("mss", "MSS") ~ "MSS",
+      `Molecular Subtype` == "MSI"~ "MSI",
+      `Molecular Subtype` == "POLE" ~ "POLE",
+      `Molecular Subtype` == "Unknown" ~ NA
+  ),
+  `Overall Survival Status` = case_when(
+    `Overall Survival Status` == "0:LIVING" ~ "Living",
+    `Overall Survival Status` == "1:DECEASED" ~ "Deceased"
+  ))
+
+```
+
+Some variables in the dataset are renamed to make them easier to understand and more consistent. The mutate() function is used to modify certain columns in the dataset (MSK_colorectal_dataset) by replacing abbreviations or unclear terms with more descriptive labels.
+
+```{r}
+### General summary of the entire dataset with percentages
+
+summary_table <- MSK_colorectal_dataset_rename |>
+  select(-c(`Study ID`, `Patient ID`, `Sample ID`, `First Symptoms at Diagnosis`, `First Line Treatment at Metastasis`)) |> ## excluding some variables
+  tbl_summary() |>
+  modify_header(label ~ "**Characteristics**") |> 
+  bold_labels() 
+
+general_summary_table <- summary_table |>
+  as_gt() |>
+  tab_options(
+    table.font.size = "small",
+    heading.align = "center"
+  ) |>
+  tab_style(
+    style = list(
+      cell_fill(color = "white"),
+      cell_borders(sides = "all", color = "grey", weight = px(1))
+    ),
+    locations = cells_body()
+  )
+## Distribution of BMI histogram plot -  histograms to visualize the distribution of BMI across the patient sample       
+
+histogram_BMI <- ggplot(MSK_colorectal_dataset_rename, aes(x = BMI)) +
+  geom_histogram(binwidth = 1, fill = "darkgreen", color = "white") +
+  labs(title = "Distribution of BMI Histogram", x = "BMI", y = "Frequency") ## histogram
+
+```
+
+A summary table (summary_table) is generated for the entire dataset, excluding certain variables that are not essential for the summary (Study ID, Patient ID, and Sample ID). The table provides a general overview of the data, showing the counts and percentages for categorical variables, and the median (with Q1 and Q3) for continuous variables. This summary is formatted with tbl_summary() and the column labels are modified for better clarity. The table is then converted into a gt table (general_summary_table) for customization for better presentation and readability. A histogram (histogram_BMI) is created to visualize the distribution of BMI values across the patient sample. The histogram uses the ggplot2 package, with each bar representing a range of BMI values.
+
+```{r}
+
+## visualizing missing data
+
+## to visualize missing data
+NA_data_plot <- gg_miss_var(MSK_colorectal_dataset_rename) +
+  labs(title = "Missing Data by Variable") +
+  theme_minimal()
+
+
+## Heatmap of missingness
+heatmap_NA_data <- vis_miss(MSK_colorectal_dataset_rename) +
+  labs(title = "Missing Data Heatmap") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 270, hjust = 1) ## rotating x-axis labels for improvede readability
+  )
+
+```
+
+This part of the code generates a plot "Missing Data by Variable" (NA_data_plot) to visualize the amount of missing data for each variable in the dataset (MSK_colorectal_dataset_rename). The function gg_miss_var() from the naniar package is used to create a bar plot where each bar represents a variable, and the lenght of the bar indicates the proportion of missing values. Also, a heatmap "Missing Data Heatmap" (heatmap_NA_data) is created to provide a more detailed view of missing data across the entire dataset. The function vis_miss() from the naniar package generates a heatmap where each cell represents a value in the dataset (missing data in dark, present data in gray).
+
+-   **Summarizing data by Age Groups**
+
+```{r warning=FALSE, results='asis', message=FALSE}
+
+
+### General summary of dataset by Age Groups
+
+summary_table_agegroups <- MSK_colorectal_dataset_rename |>
+  select(-c(`Study ID`, `Patient ID`, `Sample ID`, `First Symptoms at Diagnosis`, `First Line Treatment at Metastasis`)) |> 
+  tbl_summary(
+    by = `Age Groups`, 
+    statistic = list(all_continuous() ~ "{median} ({p25}, {p75})", all_categorical() ~ "{n} ({p}%)"), 
+    label = list(
+      `Age at Diagnosis` = "Age at Diagnosis (Median, IQR)",
+      `BMI categories` = "BMI Categories",
+      `Cancer Type Detailed` = "Detailed Cancer Type",
+      `Primary Tumor Location` = "Primary Tumor Location"
+    )
+  ) |> 
+  add_p() |> ## p-values
+  modify_header(label ~ "**Characteristic**") |> 
+  bold_labels() |>
+  as_gt() |>
+  tab_options(
+    table.font.size = "small",
+    heading.align = "center"
+  ) |> 
+  tab_style(
+    style = list(
+      cell_fill(color = "white"),
+      cell_borders(sides = "all", color = "grey", weight = px(1))
+    ),
+    locations = cells_body()
+  )
+
+
+## Violin Plot for Age Groups and BMI to examine variability
+
+violin_plot_age_BMI <- ggplot(na.omit(MSK_colorectal_dataset_rename), aes(x = `Age Groups`, y = BMI, fill = `Age Groups`)) +
+  geom_violin(color = "black") +
+  geom_boxplot(width = 0.1, fill = "grey", color = "black") +
+  labs(title = "Violin Plot for Age Groups and BMI",
+       x = "Age Groups",
+       y = "BMI") +
+  theme_bw() +
+  scale_fill_manual(values = c("forestgreen", "goldenrod1")) 
+
+
+## Bar plots ( Age subgroups and the percent of patients by sex, race, bmi categories, tumor grade, stage, smoking history)
+
+
+colors <- c(
+  "Male" = "palevioletred4", "Female" = "palevioletred1", ## sex
+  "Underweight (UW)" = "deepskyblue", "Normal (NW)" = "dodgerblue1", ## bmi category
+  "Overweight (OW)" = "dodgerblue3", "Obese (OB)" = "dodgerblue4",
+  "Asian or Indian subcontinent" = "palegreen", "Black or African American" = "palegreen4", "White" = "limegreen", ## race
+  "Current" = "orangered4", "Former" = "orangered", "Never" = "orange1", ## smoking history
+  "Yes_HTN" = "mediumpurple1", "No_HTN" = "mediumpurple4", ## hypertension history
+  "Yes_DM" = "goldenrod2", "No_DM" = "goldenrod4", ## DM history
+  "Moderately differentiated" = "saddlebrown", "Moderately poorly differentiated" = "salmon", "Poorly differentiated" = "salmon3","Well-differentiated" = "sandybrown", ## tumor grade
+  "I" = "maroon4", "II" = "maroon2", "III" = "maroon", "IV" = "magenta3"
+)
+
+dem_bar_plots <- na.omit(MSK_colorectal_dataset_rename)
+dem_bar_plots$`Hypertension History` <- factor(dem_bar_plots$`Hypertension History`,
+                                                               levels = c("Yes", "No"),
+                                                               labels = c("Yes_HTN", "No_HTN"))
+
+dem_bar_plots$`Diabetes Mellitus History` <- factor(dem_bar_plots$`Diabetes Mellitus History`,
+                                                               levels = c("Yes", "No"),
+                                                               labels = c("Yes_DM", "No_DM"))
+
+
+descriptive_bar_plots <- function(data, x_var, fill_var, title) {
+  ggplot(data, aes_string(x = x_var, fill = fill_var)) +
+    geom_bar(position = "fill") +
+    labs(title = title, x = "Age Subgroup") +
+    scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+    scale_fill_manual(values = colors) +
+    coord_flip() +
+    theme_minimal() +
+    theme(
+      axis.title.y = element_blank(),
+      axis.title.x = element_blank(),
+      legend.position = "right",
+      plot.title = element_text(size = 12)
+    ) 
+}  ## creating function to keep barplots in the same format
+
+descriptive_1 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "Sex", "Sex Distribution") 
+descriptive_2 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`BMI categories`", "BMI Category Distribution")
+descriptive_3 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Race Category`", "Race Distribution")
+descriptive_4 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Smoking history`", "Smoking History Distribution")
+descriptive_5 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Hypertension History`", "Hypertension History Distribution")
+descriptive_6 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Diabetes Mellitus History`", "Diabetes Mellitus History Distribution")
+descriptive_7 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Tumor Grade`", "Tumor Grade Distribution")
+descriptive_8 <- descriptive_bar_plots(dem_bar_plots, "`Age Subgroups`", "`Stage at Diagnosis`", "Stage at Diagnosis Distribution")
+
+
+combined_plot_dem <- descriptive_2 + descriptive_1 + descriptive_3 +
+                 plot_layout(ncol = 1, guides = "collect") +
+                 theme(legend.position = "right") 
+
+combined_plot_pmh <- descriptive_2 + descriptive_4 + descriptive_5 + descriptive_6 +
+                 plot_layout(ncol = 1, guides = "collect") +
+                 theme(legend.position = "right")
+
+combined_plot_tnm <- descriptive_2 + descriptive_7 + descriptive_8 +
+                 plot_layout(ncol = 1, guides = "collect") +
+                 theme(legend.position = "right")
+
+```
+
+A summary table (summary_table_agegroups) is created to compare the different Age Groups (early-onset vs. average-onset). This table displays the total counts, percentages, and median values (with the first and third quartiles) for various key variables such as Age at Diagnosis, BMI Categories, Cancer Type, and Primary Tumor Location. P-values are included to assess statistical significance between age groups, using tests like the Wilcoxon rank-sum, Pearson’s Chi-squared, and Fisher’s exact tests. A violin plot (violin_plot_age_BMI) is generated to visualize the distribution and variability of BMI across different age groups. The plot combines a violin shape to show the density distribution of BMI values by age group, along with boxplots to highlight the median and interquartile range (IQR). This helps in understanding how BMI varies within each age group, using distinct colors for better clarity. Descriptive bar plots are created to display the distribution of various demographic and clinical variables by Age Subgroups. Each plot shows the percentage of patients within each age subgroup for variables such as Sex, BMI Categories, Race, Tumor Grade, Stage at Diagnosis, Smoking History, Hypertension History, and Diabetes Mellitus History. The plots are created using the function descriptive_bar_plots() to ensure consistency in appearance, with the fill color based on the variable categories and percentages plotted along the y-axis. For better visualization and comparison the bar plots were combined (three different combinations).
+
+-   **Summarizing data by BMI categories, including counts, means, and chi-square/Fisher tests for statistical relationships**
+
+```{r warning=FALSE, results='asis', message=FALSE}
+
+
+## Summary table of dataset grouping by BMI Categories.
+
+summary_table_BMI_cat <- MSK_colorectal_dataset_rename |> 
+  select(-c(`Study ID`, `Patient ID`, `Sample ID`,`PUMP`,`Gene Panel`, `Used in Genomic MSS Analysis`, `Used in Genomic MSS Met Survival Analysis`, `Number of Samples Per Patient`, `First Symptoms at Diagnosis`, `First Line Treatment at Metastasis`, `Oncotree Code`, `Sample Class`, `Used in Clinical Analysis`, `Used for Response`, `Impact TMB Score`, `Fraction Genome Altered`,`MSI Score`, `MSI Type`, `Mutation Count`, `Sample coverage`, `Tumor Purity`, BMI, `Cancer Type`)) |> ## Excluding some columns
+  tbl_summary(
+    by = `BMI categories`,  ## Grouping by BMI categories
+  ) |> 
+  add_p(
+    test = list(
+      `Age Groups` ~ "fisher.test",  ## Fisher's test for Age Groups
+      `Age Subgroups` ~ "chisq.test",  ## Chi-square for Age Subgroups
+      `Overall Survival Status` ~ "chisq.test"
+    )
+  ) |>
+  bold_labels() |> 
+  modify_header(label = "**Characteristic**") 
+
+
+## Plotting age at diagnosis by BMI categories (boxplot)
+
+box_plot_BMI_age <- ggplot(MSK_colorectal_dataset_rename, aes(x = `BMI categories`, y = `Age at Diagnosis`, fill = `BMI categories`)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("Normal (NW)" = "lightblue", 
+                               "Overweight (OW)" = "pink", 
+                               "Obese (OB)" = "orange",
+                               "Underweight (UW)" = "green")) +
+  labs(title = "Age at Diagnosis by BMI Categories", x = "BMI Categories", y = "Age at Diagnosis")
+
+
+
+## Bar Plot for Age Groups and BMI Categories
+
+bar_plot_BMI_age <- ggplot(na.omit(MSK_colorectal_dataset_rename), aes(x = `Age Groups`, fill = `BMI categories`)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("Normal (NW)" = "lightblue", 
+                                "Overweight (OW)" = "pink", 
+                                "Obese (OB)" = "orange",
+                                "Underweight (UW)" = "green")) +
+  labs(title = "Age Groups and BMI Categories: Proportions",
+       x = "Age Groups",
+       y = "proportion") +
+  theme_bw()
+
+
+```
+
+A summary table (summary_table_BMI_cat) is created to provide an overview of key characteristics grouped by BMI categories. The table includes counts, percentages, and the median (with interquartile range) for continuous variables. It also includes p-values derived from statistical tests such as Kruskal-Wallis for continuous variables, and Fisher’s exact or Pearson’s chi-squared tests for categorical variables. The tests assess differences across the BMI categories for variables like Age Groups, Age Subgroups, and Overall Survival Status. A box plot of age at diagnosis by BMI Categories (box_plot_BMI_age) is provided showing the distribution of Age at Diagnosis across different BMI categories. The box plots display the median and interquartile range (IQR) for each BMI category, with distinct colors representing each group. This allows for an easy comparison of age distributions across BMI categories. A stacked bar plot of age group proportions by BMI Categories (bar_plot_BMI_age) is added to show the proportions of patients in different age groups within each BMI category. The bars are colored by BMI category, providing a clear visualization of how BMI distribution varies across age groups.
+
+## Linear Regression Analysis:
+
+This section contains the linear regression analysis that will model the relationship between age at diagnosis and BMI, including interactions with other predictors.
+
+-   **Basic Linear Model**:
+
+```{r warning=FALSE}
+
+set.seed(1234)
+
+df <- MSK_colorectal_dataset_rename
+
+## Linear Model Between Age at Diagnosis and BMI - fit a linear regression model with age at diagnosis as the dependent variable and BMI as the main predictor.
+
+test.fit <- lm(`Age at Diagnosis` ~ BMI, data = df)
+
+
+## diagnostic plots for model assessment.
+
+par(mfrow = c(2, 2))
+
+## Visualize the linear relationship between age at diagnosis and BMI using scatter plots with fitted regression lines.
+
+scatter_plot_age_BMI <- df |> 
+  ggplot(aes(x = BMI, y = `Age at Diagnosis`)) +
+  geom_point(color = "steelblue1") + 
+  geom_smooth(method = "lm", color = "steelblue4") +
+  theme_bw() +
+  labs(title = "Scatter Plot of Age at Diagnosis vs. BMI",
+       x = "Body Mass Index (BMI)",
+       y = "Age at Diagnosis (years)") ## Scatter plot with a linear regression line
+
+scatter_plot_age_BMI_plotly <- function(data) { ## for interactive visualization
+  p <- ggplot(data, aes(x = BMI, y = `Age at Diagnosis`)) +
+    geom_point(color = "steelblue1") + 
+    geom_smooth(method = "lm", color = "steelblue4") +
+    theme_bw() +
+    labs(title = "Scatter Plot of Age at Diagnosis vs. BMI", 
+         x = "Body Mass Index (BMI)", 
+         y = "Age at Diagnosis (years)")
+  
+  ggplotly(p)
+}
+
+
+## Correlation calculation
+
+correlation <- cor(df$BMI, df$`Age at Diagnosis`, use = "complete.obs") ## pearson correlation
+correlation_spearman <- cor(df$BMI, df$`Age at Diagnosis`, use = "complete.obs", method = "spearman") ## spearman correlation
+
+
+```
+
+Here, a linear regression model is fitted to investigate the relationship between BMI and age at diagnosis of colorectal cancer, with age at diagnosis as the dependent variable and BMI as the main predictor. Diagnostic plots are generated to assess the assumptions and performance of the model. Additionally, scatter plots with fitted regression lines are created to visualize the relationship between BMI and age at diagnosis, using both static and interactive formats. To quantify the strength of this relationship, Pearson and Spearman correlation coefficients are calculated, providing measures of linear and rank-based associations, respectively.
+
+-   **Multivariate Linear Regression Analysis**:
+
+```{r warning=FALSE}
+
+set.seed(1234)
+
+## Multivariate Linear Regression Model with other predictors: race, Hypertension history, sex and DM history.
+
+test.fit_multi <- lm(`Age at Diagnosis` ~ BMI + Sex + `Race Category` + `Hypertension History` + `Diabetes Mellitus History`, data = df)
+
+
+## Plotting (combining the different plots of the variable used in the model) - visualize relationships using box plots to illustrate multivariate effects.
+
+htn_plot <- df |> 
+  ggplot(aes(x = `Hypertension History`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "gold2") +
+  labs(title = "Age at Diagnosis by Hypertension") +
+  theme_bw()
+
+dm_plot <- df |> 
+  ggplot(aes(x = `Diabetes Mellitus History`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "lightblue3") +
+  labs(title = "Age at Diagnosis by Diabetes Mellitus") +
+  theme_bw()
+
+sex_plot <- df |> 
+  ggplot(aes(x = Sex, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "palevioletred1") +
+  labs(title = "Age at Diagnosis by Sex") +
+  theme_bw()
+
+race_plot <- df |> 
+  ggplot(aes(x = `Race Category`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "darkseagreen3") +
+  labs(title = "Age at Diagnosis by Race Category") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+
+```
+
+This code implements a multivariate linear regression model to analyze the relationship between age at diagnosis and multiple predictors, including BMI, sex, race, hypertension history, and diabetes mellitus history. To visually explore the effects of these variables, a series of box plots is created. Each plot illustrates the distribution of age at diagnosis across different categories of hypertension history, diabetes mellitus history, sex, and race, providing insights into their potential contributions to age at diagnosis.
+
+```{r warning=FALSE}
+## Expanding the multivariate analysis to include other variables: race, history of hypertension, sex, diabetes history, tumor grade, stage at diagnosis, primary tumor location, smoking history, and MSI score.
+
+test.fit_multi_expanded <- lm(`Age at Diagnosis` ~ BMI + Sex + `Race Category` + `Hypertension History` +
+                              `Diabetes Mellitus History` + `Tumor Grade` + `Stage at Diagnosis` +
+                              `Primary Tumor Location` + `Smoking history` + `MSI Score`, data = df)
+
+
+## Plotting 
+
+bmi_plot <- df |> 
+  ggplot(aes(x = BMI, y = `Age at Diagnosis`, color = `Hypertension History`)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  labs(title = "Age at Diagnosis vs. BMI by Hypertension History") +
+  theme_bw()
+
+scatter_plot_age_htn_plotly <- function(data) { ## for interactive visualization
+  p <- ggplot(data, aes(x = BMI, y = `Age at Diagnosis`, color = `Hypertension History`)) +
+    geom_point() + 
+    geom_smooth(method = "lm") +
+    theme_bw() +
+    labs(title = "Age at Diagnosis vs. BMI by Hypertension History", 
+         x = "Body Mass Index (BMI)", 
+         y = "Age at Diagnosis (years)")
+  
+  ggplotly(p)
+}
+
+tumorgrade_plot <- df |> 
+  ggplot(aes(x = `Tumor Grade`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "salmon") +
+  labs(title = "Age at Diagnosis by Tumor Grade") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 10))
+
+smoking_plot <- df |> 
+  ggplot(aes(x = `Smoking history`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "orange3") +
+  labs(title = "Age at Diagnosis by Smoking History") +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = 10)
+  )
+
+primarytumor_plot <- df |> 
+  ggplot(aes(x = `Primary Tumor Location`, y = `Age at Diagnosis`)) +
+  geom_boxplot(fill = "paleturquoise") +
+  labs(title = "Age at Diagnosis by Primary Tumor Location") +
+  theme_bw() +
+  theme(
+    plot.title = element_text(size = 10)
+  )
+
+
+```
+
+This code expands the multivariate linear regression analysis to incorporate additional predictors, including BMI, sex, race, hypertension history, diabetes mellitus history, tumor grade, stage at diagnosis, primary tumor location, smoking history, and MSI score. Diagnostic plots are generated to assess the regression model. For visualization, a scatter plot is created to depict the relationship between age at diagnosis and BMI, stratified by hypertension history, while box plots illustrate the distribution of age at diagnosis across categories of tumor grade, smoking history, and primary tumor location. These visualizations offer further insights into the associations between age at diagnosis and the included variables.
+
+-   **Assessing for Interaction Terms**:
+
+```{r warning=FALSE}
+## Assessing potential interaction terms (counfounders?):
+## Assess potential interaction terms within the model to identify variables that modify the effect of BMI on age at diagnosis.
+
+test.fit_multi_interaction <- lm(`Age at Diagnosis` ~ BMI * `Hypertension History` +
+                                  BMI * `Smoking history` + 
+                                  BMI * `Diabetes Mellitus History` + 
+                                  BMI * Sex + 
+                                  BMI *`Race Category` + 
+                                  BMI * `Tumor Grade` + 
+                                  BMI * `Stage at Diagnosis` + 
+                                  BMI * `Primary Tumor Location` + 
+                                  BMI * `MSI Score`, 
+                                  data = df)
+
+anova_results <- anova(test.fit_multi_expanded, test.fit_multi_interaction)
+
+
+```
+
+This code evaluates potential interaction terms to explore whether variables such as hypertension history, smoking history, diabetes mellitus history, sex, race category, tumor grade, stage at diagnosis, primary tumor location, and MSI score modify the effect of BMI on the age at diagnosis of colorectal cancer. A multivariate linear regression model incorporating interaction terms is fitted and compared to the expanded multivariate model (without interaction terms) using ANOVA. This approach helps determine whether including interaction terms significantly improves the model's explanatory power and accounts for potential confounding effects in the analysis.
+
+## Logistic Regression Analysis:
+
+This section will include the logistic regression analysis, that will analyze the likelihood of early-onset colorectal cancer based on BMI and age groups.
+
+-   **Basic Logistic Regression**:
+
+```{r warning=FALSE}
+
+## Ensuring Age Groups and BMI categories are factors
+df$`Age Groups` <- factor(df$`Age Groups`)
+df$`BMI categories` <- factor(df$`BMI categories`)
+
+## Chi-Square Test for Association of Age Groups and BMI categories
+chi.square.age.BMI <- chisq.test(table(df$`Age Groups`, df$`BMI categories`)) 
+
+## Logistic Regression Model with age groups and BMI categories
+
+logistic_model <- glm(`Age Groups` ~ `BMI categories`, data = df, family = binomial())
+
+
+## ROC curve of Logistic Regression Model with age groups and BMI categories
+
+df_clean <- df[complete.cases(df$`Age Groups`, df$`BMI categories`), ] ## cleaning data
+logistic_model_clean <- glm(`Age Groups` ~ `BMI categories`, data = df_clean, family = binomial())
+predicted_probs <- predict(logistic_model_clean, type = "response") ## Predicting probabilities
+
+roc_curve_categories <- roc(df_clean$`Age Groups`, predicted_probs)
+auc_value_categories <- auc(roc_curve_categories) 
+
+
+## Logistic Regression Model with Age groups BMI as a Continuous Variable
+
+logistic_model_bmi <- glm(`Age Groups` ~ BMI, data = df, family = binomial())
+
+
+## ROC curve for Logistic Regression Model with Age groups and BMI as a Continuous Variable
+
+df_clean_bmi <- df[complete.cases(df$`Age Groups`, df$BMI), ] ## cleaning data
+logistic_model_bmi_clean <- glm(`Age Groups` ~ BMI, data = df_clean_bmi, family = binomial())
+predicted_probs_bmi <- predict(logistic_model_bmi_clean, type = "response") ## Predicting probabilities
+
+roc_curve_bmi <- roc(df_clean_bmi$`Age Groups`, predicted_probs_bmi)
+auc_value_bmi <- auc(roc_curve_bmi)
+
+
+## ggplot
+
+roc_data_categories <- data.frame(
+  specificity = roc_curve_categories$specificities,
+  sensitivity = roc_curve_categories$sensitivities,
+  model = "BMI Categories"
+)
+
+roc_data_bmi <- data.frame(
+  specificity = roc_curve_bmi$specificities,
+  sensitivity = roc_curve_bmi$sensitivities,
+  model = "BMI (Continuous)"
+)
+
+## Combining both ROC data frames
+roc_data_combined <- rbind(roc_data_categories, roc_data_bmi)
+
+
+log_regression_plot <- ggplot(roc_data_combined, aes(x = 1 - specificity, y = sensitivity, color = model)) +
+  geom_line(size = 1) +
+  geom_abline(linetype = "dashed", color = "gray") +
+  ggtitle("ROC Curves Comparison - BMI categories vs continuous") +
+  xlab("1 - Specificity") +
+  ylab("Sensitivity") +
+  theme_minimal() +
+  scale_color_manual(
+    values = c("BMI Categories" = "blue", "BMI (Continuous)" = "green"),
+    labels = c(
+      paste0("BMI Categories: (AUC = ", round(auc_value_categories, 3), ")"),
+      paste0("BMI Continuous: (AUC = ", round(auc_value_bmi, 3), ")")
+    )
+  )
+
+
+```
+
+This section conducts a logistic regression analysis to evaluate the likelihood of early-onset colorectal cancer based on BMI. At first, a chi-square test is performed to assess the association between age groups and BMI categories. Two logistic regression models are developed: one with BMI as a categorical predictor (logistic_model) and the other treating BMI as a continuous variable (logistic_model_bmi). For each model, ROC curves are generated to evaluate predictive performance, with the AUC (Area Under the Curve) values calculated for both approaches. Then, the ROC curves for the categorical and continuous BMI models are combined into a single plot for comparison, enabling a clear visualization of their respective predictive capabilities.
+
+-   **Multinomial Logistic Regression:**
+
+```{r warning=FALSE}
+
+df$`Age Subgroups` <- factor(df$`Age Subgroups`)
+
+## Plotting the distribution of Age Subgroups by BMI
+
+bar_plot_age_subgroup_BMI <- ggplot(na.omit(df), aes(x = `Age Subgroups`, fill = `BMI categories`)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("Normal (NW)" = "#50b2c0", 
+                                "Overweight (OW)" = "#faaa8d", 
+                                "Obese (OB)" = "#fe7f2d",
+                                "Underweight (UW)" = "green")) + # Adjust colors as needed
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1)) +
+  labs(title = "Distribution of Age Subgroups by BMI Categories",
+       x = "Age Subgroups",
+       y = "Proportion")
+
+chisq_test_result <- chisq.test(table(df$`Age Subgroups`, df$`BMI categories`))
+
+
+multinom_model <- multinom(`Age Subgroups` ~ BMI, data = df)
+
+multinom_model_odds_ratios <- exp(coef(multinom_model))
+
+
+```
+
+In this section, we analyze the relationship between age subgroups and BMI categories. A chi-square test (chisq_test_result) is conducted to evaluate the association between these variables. To visualize this relationship, a proportional bar plot (bar_plot_age_subgroup_BMI) is created, showing the distribution of age subgroups by BMI categories, with distinct colors representing each BMI category. Moreover, a multinomial logistic regression model (multinom_model) is fitted to assess the odds of belonging to specific age subgroups based on BMI. The odds ratios from the model (multinom_model_odds_ratios) provide insights into how BMI influences the likelihood of falling into each age subgroup.
+
+-   **Interaction assessment:**
+
+```{r warning= FALSE}
+
+
+## binomial logistic regression analysis of Age Groups and BMI, assessing for interactions with other variables.
+
+age_groups_fit_glm1 <- glm(`Age Groups` ~ `BMI categories` * `Hypertension History` +
+                      `BMI categories` * `Smoking history` + 
+                      `BMI categories` * `Diabetes Mellitus History`,
+                      family = binomial(link = "logit"), 
+                      data = df)
+
+
+age_groups_fit_glm2 <- glm(`Age Groups` ~ `BMI categories` * Sex + 
+                      `BMI categories` * `Race Category`,
+                      family = binomial(link = "logit"), 
+                      data = df)
+
+age_groups_fit_glm3 <- glm(`Age Groups` ~ `BMI categories` * `Tumor Grade` +
+                      `BMI categories`* `Stage at Diagnosis` + 
+                      `BMI categories` * `Primary Tumor Location` +
+                      `BMI categories` * `MSI Score`,
+                      family = binomial(link = "logit"), 
+                      data = df)
+
+```
+
+This section involves a binomial logistic regression analysis to explore the relationship between age groups and BMI, while assessing interactions with additional variables. Three models are created to systematically evaluate the impact of different interaction terms. The first model (age_groups_fit_glm1) examines interactions between BMI categories and hypertension history, smoking history, and diabetes mellitus history. The second model (age_groups_fit_glm2) explores interactions between BMI categories and sex as well as race category. The third model (age_groups_fit_glm3) includes interactions between BMI categories and tumor grade, stage at diagnosis, primary tumor location, and MSI score. For each model, odds ratios and confidence intervals will be calculated to interpret the strength and significance of the interactions. Following this, the models will be compared to identify the best-fitting model, and cross-validation will be performed to assess its reliability and predictive accuracy.
+
+-   **Cross-validation:**
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(123) 
+
+## Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables - using the glm1 model that was considered to have the best balance between model fit and complexity, being the most reliable one.
+
+df <- MSK_colorectal_dataset_rename |> mutate(`Age Groups` = case_when( ## renaming to simplify
+  `Age Groups` == "Average-onset (AO)" ~ "AO",
+  `Age Groups` == "Early-onset (EO)" ~ "EO"))
+    
+df$`Age Groups` <- factor(df$`Age Groups`, levels = c("AO", "EO"))
+
+dataset_folds <- vfold_cv(df, v = 5, strata = `Age Groups`)
+
+lr_spec <- logistic_reg() |> 
+  set_engine("glm") |> 
+  set_mode("classification")
+
+lr_workflow <- workflow() |> 
+  add_model(lr_spec) |> 
+  add_formula(`Age Groups` ~ `BMI categories` * `Hypertension History` +
+                `BMI categories` * `Smoking history` + 
+                `BMI categories` * `Diabetes Mellitus History`)
+
+
+lr_fit_cv <- lr_workflow |> 
+  fit_resamples(dataset_folds, control = control_resamples(save_pred = TRUE)) ## cross-validation
+
+
+lr_cv_auc <- lr_fit_cv |> 
+  collect_predictions() |> 
+  roc_auc(`Age Groups`, .pred_AO)
+
+
+## Plotting ROC curve
+
+roc_data <- lr_fit_cv |> 
+  collect_predictions() |> 
+  roc_curve(`Age Groups`, .pred_AO)
+
+cross.val.glm1.roc <- autoplot(roc_data) + 
+  labs(title = "ROC Curve for Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables")
+
+## Calculating precision, recall, and F1 Score
+
+precision_recall_f1 <- lr_fit_cv |> 
+  collect_predictions() |> 
+  mutate(pred_class = ifelse(.pred_AO > 0.5, "AO", "EO")) |> 
+  mutate(pred_class = factor(pred_class, levels = c("AO", "EO"))) |>  
+  metrics(truth = `Age Groups`, estimate = pred_class)
+
+```
+
+In this part, a cross-validation is conducted to evaluate the performance of a logistic regression model in predicting age groups (early-onset vs. average-onset) based on BMI categories and potential interactions with other variables. The logistic regression model chosen for this analysis (glm1), was previously determined to have the best balance between model fit and complexity, making it the most reliable model to use. To prepare the data, the "Age Groups" variable is renamed into "AO" for average-onset and "EO" for early-onset to simplify. Then, a 5-fold cross-validation with stratification is done based on the "Age Groups" variable, ensuring each fold had a balanced representation of the outcome classes. The logistic regression model (with parsnip and tidymodels), included interaction terms between the BMI categories and health history (of hypertension, smoking and diabetes mellitus). This allows for a better understanding of how these factors might interact with BMI in predicting the age of onset.
+
+Model performance was assessed using the area under the receiver operating characteristic curve (AUC), calculated from the predictions made during cross-validation. The ROC curve provides a graphical representation of the model's ability to correctly classify the two age groups. Precision, recall, and F1 scores were calculated based on the predicted classes (AO vs. EO), with a threshold of 0.5 used to classify observations. These metrics provide insight into the model's accuracy, balance between precision and recall, and overall classification performance. This approach ensures a thorough evaluation of the model's generalization ability, accounting for the potential interactions between BMI categories and other variables. By using cross-validation, we can assess how well the model performs on unseen data, providing a more reliable estimate of its predictive performance.
+
+# Results {#sec-results}
+
+## **Descriptive Statistics**
+
+-   **General Summary**
+
+```{r warning=FALSE, results='asis'}
+
+print(general_summary_table) ## general summary table 
+
+print(histogram_BMI) ## distribution of BMI histogram
+```
+
+The general summary table describes the 1,516 individuals diagnosed with colorectal cancer in the MSK Colorectal dataset. This dataset includes demographic, clinical, and molecular information. The median age at diagnosis is 49 years, with 54% of patients categorized as having early-onset colorectal cancer. The median BMI is 26.5, indicating that, on average, the patients fall within the overweight category. BMI categories are distributed as follows: 37% normal weight, 33% overweight, 28% obese, and 1.9% underweight. This aligns well with the histogram above, which shows a concentration of BMI values in the normal to overweight range, peaking around 24 to 27 and tapering off as BMI increases.
+
+All cases in the dataset are colorectal cancer, with 66% classified specifically as colon adenocarcinoma, followed by rectal adenocarcinoma (22%) and colorectal adenocarcinoma (8.8%). Regarding comorbidities, 26% of patients have a history of hypertension, and 8.2% have a history of diabetes mellitus. Over half of the patients (55%) underwent metastasectomy, with the liver being the most common site of metastasis (56%). On the molecular level, 92% of tumors are microsatellite stable (MSS), with a median mutation count of 7. This suggests that the majority of tumors in this cohort are relatively stable genetically. In terms of tumor grading, 78% are moderately differentiated, with a smaller portion (15%) classified as poorly differentiated, indicating some variation in tumor aggressiveness within the sample. Finally, 44% of patients are deceased, while 56% are living, with a median overall survival time of 30 months from diagnosis, providing insight into survival outcomes within this group.
+
+```{r}
+
+print(NA_data_plot) ## visualization of missing data in dataset
+print(heatmap_NA_data) ## heat map for visualization of missing data in dataset
+
+```
+
+The plot, titled "Missing Data by Variable, illustrates the extent of missing data across different variables. The variables with the most missing values are Metastatic Site and First Line Treatment at Metastasis, consistent with the heatmap that visualizes the proportions of missing data. The dataset is largely complete, with 94% of the data present and 6% missing, primarily concentrated in a small subset of variables.
+
+-   **Summarizing data by Age Groups**
+
+```{r warning=FALSE, results='asis'}
+
+print(summary_table_agegroups) ## summary table by age groups (early-onset vs average-onset)
+print(violin_plot_age_BMI) ## violin plot per age group and BMI
+print(combined_plot_dem) ## bar plot (BMI categories, sex, race)
+print(combined_plot_pmh) ## bar plot (BMI categories, smoking history, hypertension history, diabetes mellitus history)
+print(combined_plot_tnm) ## bar plot (BMI categories, tumor grade distribution, stage at diagnosis distribution)
+
+```
+
+The violin plot for age groups and BMI shows the BMI distribution for each age group (early-onset (EO) vs. average-onset (AO)). While both age groups have a similar median BMI, AO patients have a slightly higher median and a broader spread of values. AO patients have a higher representation in the upper BMI range, whereas EO patients' BMI distribution is more concentrated around the lower range, suggesting a higher prevalence of normal or only slightly elevated BMI levels among the EO patients. The AO group has a median age of 61 years, while the EO group has a median age of 43 years, with 21% of the EO patients diagnosed before 35 years of age. Both age groups have the median BMI within the overweight category, with AO patients having a slightly higher median BMI of 27 compared to EO with a median BMI of 26. 42% of EO patients fall within the normal weight category, compared to 31% in AO patients. In terms of tumor mutation burden (TMB), AO patients have a slightly higher median score of 7, compared to 6 in EO patients, indicating a marginally greater genomic instability in AO cancers. Microsatellite stability (MSS) is also more prevalent in EO patients (95%) than in AO patients (90%).
+
+Hypertension and diabetes, often associated with age, are more prevalent in AO patients, with 44% having hypertension and 12% with diabetes, compared to just 9.7% and 5.0% respectively in EO patients. This may reflect age-related comorbidities within the AO group. Regarding metastasis and tumor characteristics, both groups share similar patterns in metastatic sites, with the liver being the most common. However, EO patients have a higher rate of metastasectomy at 60%, suggesting more frequent surgical interventions. EO patients also have a larger proportion of poorly differentiated tumors (18% versus 12%), which may indicate more aggressive cancer behavior in younger patients.
+
+Considering survival, AO patients have a median overall survival from time of metastasis diagnosis of 40 months, which is significantly longer than the EO group’s 23 months, pointing to a potentially poorer prognosis in younger patients. Regarding smoking, a higher percentage of AO patients have a history of smoking, with 46% having smoked compared to 29% of EO patients. Also, 6.7% of AO patients are current smokers, while only 0.8% of EO patients currently smoke, indicating a potential lifestyle difference that may influence cancer risk. The tumor location also varies between groups, with EO patients having a higher proportion of tumors in the rectum (34%) compared to 22% in AO patients, while AO patients have more tumors on the left side (42%). The mean age of patients in the dataset is 50.8 years (SD = 12.9), with a mean BMI of 27.4 (SD = 5.8).
+
+When examining the age groups, patients with average-onset colorectal cancer had a mean BMI of 27.8, while those with early-onset colorectal cancer had a mean BMI of 27. When classifying the cases by subtypes of colorectal cancer, the majority of patients were diagnosed with Colon Adenocarcinoma (1,002 cases), followed by Rectal Adenocarcinoma (333 cases) and Colorectal Adenocarcinoma (133 cases), which are probably cases where it was not possible to know the exact anatomical location of onset or cases in the intersection of the colon and rectum.
+
+-   **Summarizing data by BMI categories**
+
+```{r warning=FALSE, results='asis'}
+
+print(summary_table_BMI_cat) ## summary table per BMI categories
+print(box_plot_BMI_age) ## box plot of age per BMI categories
+print(bar_plot_BMI_age) ## bar plot of age groups with the BMI category proportions
+
+```
+
+The analysis examines variations in clinical characteristics among patients categorized by BMI into four groups: normal weight (NW), obese (OB), overweight (OW), and underweight (UW). Each group is assessed for differences in age at diagnosis, comorbidities, metastatic sites, survival outcomes, and other factors. The statistical significance of these differences is evaluated through p-values. Patients with normal and underweight BMIs tend to be diagnosed at an earlier age, with median ages of 47 years, compared to 50 years for obese patients (p \< 0.001). This trend aligns with the "Age at Diagnosis by BMI Categories" boxplot and "Age Group and BMI Categories: proportion" barplot, which visually emphasize younger diagnoses for normal and underweight individuals. Furthermore, a significant association (p \< 0.001) is observed between BMI categories and cancer onset type.
+
+Early-onset colorectal cancer (EO) is more common among normal and underweight individuals, while average-onset (AO) cancer is predominant in obese and overweight groups. This finding suggests that lower BMI may be associated with earlier diagnosis. The prevalence of comorbidities like hypertension and diabetes mellitus is higher in obese and overweight patients, with hypertension showing a statistically significant association (p = 0.007). This result is consistent with broader clinical literature linking higher BMI to increased hypertension risk. In contrast, no significant differences in metastasectomy rates are noted between groups (p = 0.8), and common metastatic sites include the liver, lungs, and pleura, though unknown values limit further conclusions on metastatic patterns.
+
+While median survival months post metastasis diagnosis do not vary significantly between BMI categories (p = 0.7), survival status shows a significant association, with underweight patients exhibiting a higher percentage of those still living (83%) compared to other groups (p = 0.045). However, the underweight group’s small sample size (28 patients) limits the reliability of this finding. Tumor characteristics, including location and grade, display no significant differences across BMI groups, suggesting BMI does not influence tumor differentiation or site distribution. Contrary to the hypothesis that higher BMIs might be more prevalent among early-onset cases, the data reveals that higher BMIs are associated with average-onset colorectal cancer. Overweight and obese patients are more frequently diagnosed later, while normal and underweight patients exhibit earlier onset, as reflected by the p-value of \<0.001.
+
+-   **Descriptive Statistics Section Takeaway**
+
+**The descriptive analysis of the MSK Colorectal dataset highlights significant differences in demographic, clinical, and molecular characteristics between early-onset (EO) and average-onset (AO) colorectal cancer patients. EO patients tend to be younger, leaner, and have fewer comorbidities like hypertension and diabetes compared to AO patients, who exhibit higher BMI levels and more age-associated conditions. Despite being leaner, EO patients present with more aggressive tumor features, such as a higher prevalence of poorly differentiated tumors, shorter overall survival post metastasis (23 months vs. 40 months in AO), and more frequent rectal tumor locations. BMI emerges as an influential factor in age of onset, with normal and underweight individuals more likely to be diagnosed at a younger age, whereas overweight and obese individuals are predominantly diagnosed later. The significant associations between BMI categories and clinical characteristics, as well as the distinct profiles of EO and AO patients, emphazise the need for age- and BMI-specific considerations in colorectal cancer prevention, management, and treatment strategies.**
+
+## **Linear Regression Analysis**
+
+-   **Basic Linear Model**:
+
+```{r warning=FALSE, results='asis'}
+
+summary(test.fit) ## Summary of the linear model
+coef(test.fit) ## Coefficients of the model
+confint(test.fit) ## Confidence intervals for the coefficients
+par(mfrow = c(2, 2)) 
+plot(test.fit)  ## Diagnostic plots for model assessment.
+print(scatter_plot_age_BMI) ## scatter plot with fitted regression line of linear relationship between age at diagnosis and BMI
+scatter_plot_age_BMI_plotly(MSK_colorectal_dataset_rename)
+print(paste("Pearson correlation:", correlation)) ## pearson correlation 
+print(paste("Spearman correlation:", correlation_spearman))  ##  spearman correlation 
+
+
+```
+
+The simple linear regression model assessing the relationship between Age at Diagnosis and BMI shows that each unit increase in BMI corresponds to a 0.22-year increase in Age at Diagnosis (coefficient = 0.21883, p = 0.000186). Although statistically significant (p \< 0.05), the model explains only 0.97% of the variance (R-squared = 0.00968), indicating that BMI alone is a weak predictor of Age at Diagnosis. Correlation analyses reveal a weak positive relationship between BMI and Age at Diagnosis, with a Pearson correlation of 0.098 and a Spearman correlation of 0.126.
+
+Residual diagnostic plots validate the model assumptions of linearity, homoscedasticity, and normality, with only minor deviations at the extremes. The wide spread of data points in the scatterplot of BMI versus Age at Diagnosis confirms the weak relationship, consistent with the low R-squared value.
+
+-   **Multivariate Linear Regression Analysis**:
+
+```{r warning=FALSE, results='asis'}
+
+##  multivariate linear regression model with potential predictors: race, Hypertension history, sex and DM history.
+
+modelsummary(test.fit_multi,
+             estimate = "{estimate} [{conf.low}, {conf.high}]",
+             statistic = "p.value",
+             output = "html")
+
+
+vif(test.fit_multi) ## checking for multicollinearity using VIF
+
+((htn_plot + sex_plot) / (race_plot + dm_plot)) ## combined scatter plots with variables used in the model
+
+```
+
+Adding predictors such as Sex, Race Category, Hypertension History, and Diabetes Mellitus History to the model increases its explanatory power (R-squared = 19.08%). While BMI remains a significant predictor (coefficient = 0.13, p = 0.0221), its effect size diminishes when accounting for other factors. Hypertension History emerges as the strongest predictor, delaying Age at Diagnosis by approximately 11.88 years (p \< 2e-16), while Diabetes Mellitus History shows a marginally significant effect of 2.25 years (p = 0.0586). The boxplots by hypertension and diabetes mellitus can help with the visualization of the results of the linear regression.
+
+Race Category also contributes to the model, with white patients being diagnosed approximately 2.11 years later than the reference group, while Native American/Alaska Native patients are diagnosed about 1.44 years earlier. Nevertheless, these effects are not statistically significant (p-values \> 0.05), indicating that racial differences should be carefully interpreted. The effect of sex is negligible, with males showing a non-significant decrease of about 0.08 years in Age at Diagnosis compared to females (p = 0.9003). This results can be visualized with help of the box plots provided by sex and race.
+
+Residuals diagnostics and GVIF values support the model's reliability. The residual standard error of 11.6 years indicates a relatively wide range of variability in the Age at Diagnosis that cannot be captured by the included predictors. The Generalized Variance Inflation Factor (GVIF) values for all predictors are close to 1, suggesting no multicollinearity concerns, which reinforces the reliability of the estimates in the model.
+
+```{r warning=FALSE, results='asis'}
+
+## Expanding the multivariate analysis to include other variables: race, history of hypertension, sex, diabetes history, tumor grade, stage at diagnosis, primary tumor location, smoking history, and MSI score.
+
+
+modelsummary(test.fit_multi_expanded,
+             estimate = "{estimate} [{conf.low}, {conf.high}]",
+             statistic = "p.value",
+             output = "html")
+
+vif(test.fit_multi_expanded)  # Check VIFs for multicollinearity
+par(mfrow = c(2, 2)) 
+plot(test.fit_multi_expanded) ## Diagnostic plots for model assessment.
+
+#print(bmi_plot) ## scatter plot age at diagnosis vs. BMI by hypertension history
+scatter_plot_age_htn_plotly(MSK_colorectal_dataset_rename) ## interactive scatter plot age at diagnosis vs. BMI by hypertension history
+
+((smoking_plot + primarytumor_plot) / tumorgrade_plot) ## combined box plots Age at Diagnosis by Smoking History,by Primary Tumor Location and by Primary Tumor Location
+```
+
+Expanding the multivariate model to incorporate additional potential predictors (Tumor Grade, Stage at Diagnosis, Primary Tumor Location, Smoking History, and MSI Score) increases the explanatory power (R-squared = 27.92%).BMI’s significance reduces (coefficient = 0.10, p = 0.0671), suggesting its role is attenuated when controlling for other factors. Hypertension History increases Age at Diagnosis by 10.59 years (p \< 2e-16). Diabetes Mellitus History also plays a significant role, contributing an increase of 2.52 years (p = 0.0300).
+
+Moderately poorly differentiated tumors increase diagnosis age by 5.91 years (p \< 0.001), while well-differentiated tumors reduce it by 8.02 years (p = 0.0170). Primary Tumor Location also significantly affects Age at Diagnosis. Tumors located in the right colon are linked to an increase of 3.76 years (p \< 0.001). Smoking History contributes further insights, as former smokers are diagnosed 3.98 years earlier (p = 0.0194), and never-smokers are diagnosed 7.53 years earlier (p \< 0.001) compared to current smokers. Boxplot by smoking history, tumor grade and primary tumor location were provided to aid in the visualization of the findings. Genetic factors also play a role, with the MSI Score exhibiting a small but statistically significant effect. Each unit increase in MSI Score is linked to a 0.09-year increase in Age at Diagnosis (p = 0.0267).
+
+Despite these improvements, much of the variation remains unexplained (residual standard error = 10.98 years).The Generalized Variance Inflation Factor (GVIF) values for all predictors are close to 1, indicating no multicollinearity concerns and supporting the reliability of the estimated coefficients.
+
+-   **Assessing for Interaction Terms**:
+
+```{r warning=FALSE}
+
+## assess potential interaction terms within the model to identify variables that modify the effect of BMI on age at diagnosis.
+modelsummary(test.fit_multi_interaction,
+             estimate = "{estimate} [{conf.low}, {conf.high}]",
+             statistic = "p.value",
+             output = "html")
+##print(test.fit_multi_interaction)
+##summary(test.fit_multi_interaction)
+print(anova_results) ## ANOVA comparing the interaction term model and the multivariate expanded linear regression model
+
+```
+
+The interaction analysis indicates that adding interaction terms between BMI and various health-related factors (hypertension history, smoking history, diabetes history, sex, race, tumor grade, stage at diagnosis, primary tumor location, and MSI score) does not provide a significant improvement to the model’s explanatory power. The ANOVA test comparing the interaction model (Model 2) to the expanded multivariate model (Model 1) yielded an F-statistic of 1.4216 (p = 0.1173). Since this p-value is greater than 0.05, we fail to reject the null hypothesis, indicating that the inclusion of these interaction terms does not result in a statistically significant improvement in the model. Although the Residual Sum of Squares (RSS) decreases slightly from 149,542 in Model 1 to 146,647 in Model 2, this reduction is not large enough to be considered statistically significant, meaning that BMI's relationship with Age at Diagnosis remains largely consistent, regardless of the other factors. Therefore, BMI does not appear to interact significantly with the other variables to modify its effect on Age at Diagnosis. These findings suggest that BMI's role in predicting Age at Diagnosis is independent of the health-related and demographic factors included in the model.
+
+-   **Linear Regression Section Take-away:**:
+
+**Building on patterns from the descriptive analysis, the linear regression models show that while BMI is a statistically significant predictor of Age at Diagnosis, its effect size is small and overshadowed by more influential factors, such as hypertension history, diabetes history, and tumor-specific characteristics like grade and location. Hypertension history emerges as the strongest predictor, delaying diagnosis by over a decade, followed by smaller but notable effects from diabetes history and tumor biology.The moderate explanatory power of the expanded multivariate model (R-squared = 27.92%) suggests that additional factors contribute to variations in age of diagnosis. Chronic comorbidities and aggressive tumor characteristics are strongly associated with later in life diagnosis.**
+
+## **Logistic Regression Analysis:**
+
+-   **Basic Logistic Regression**:
+
+```{r warning=FALSE}
+
+## Chi-Square Test for Association of Age Groups and BMI categories
+
+print(chi.square.age.BMI)
+
+## Logistic Regression Model with age groups and BMI categories
+
+print(logistic_model)
+exp(coef(logistic_model)) ## Odds Ratios
+plot(roc_curve_categories, col = "blue", lwd = 2, main = "ROC Curve for BMI Categories") ## ROC curve of Logistic Regression Model with age groups and BMI categories
+text(0.5, 0.2, paste("AUC =", round(auc_value_categories, 3)), col = "red", cex = 1.5)
+
+## Logistic Regression Model with Age groups BMI as a Continuous Variable
+
+print(logistic_model_bmi)
+plot(roc_curve_bmi, col = "green", lwd = 2, main = "ROC Curve for BMI (Continuous)") ## ROC curve for Logistic Regression Model with Age groups and BMI as a Continuous Variable
+text(0.5, 0.2, paste("AUC =", round(auc_value_bmi, 3)), col = "red", cex = 1.5)
+
+## ggplot with ROC curve for both Logistic Regression Model with age groups and BMI categories and with age groups and BMI as continous variable
+
+print(log_regression_plot)
+
+
+```
+
+A Pearson's Chi-squared test revealed a significant association between BMI categories and the age of onset of colorectal cancer (early-onset vs. average-onset), with an X-squared value of 19.142 (p = 0.0002555). Logistic regression using BMI categories, with normal weight as the reference, found that obese (OR = 0.6136) and overweight individuals (OR = 0.6316) were significantly less likely to develop early-onset colorectal cancer, corresponding to 38.64% and 36.84% lower odds, respectively. Conversely, normal-weight individuals showed 46% higher odds of early-onset colorectal cancer. No significant differences were observed for underweight individuals.
+
+Using BMI as a continuous variable, each one-unit increase in BMI was associated with a 2.5% decrease in the odds of early-onset colorectal cancer. However, the predictive power of BMI alone was poor, with AUC values of 0.557 for categorical BMI and 0.553 for continuous BMI. These findings suggest a modest relationship between BMI and age of onset but limited discriminatory ability when BMI is used in isolation.
+
+-   **Multinomial Logistic Regression:**
+
+```{r warning=FALSE}
+
+## Chi-squared test - Age Subgroups and BMI categories
+
+print(chisq_test_result) 
+
+## bar plot of age subgroups and BMI cotegories
+
+print(bar_plot_age_subgroup_BMI) 
+
+## Multinomial Logistic regression model of age subgroup by BMI
+
+summary(multinom_model) 
+print(multinom_model_odds_ratios) ## model with odds ratio
+
+```
+
+The results from the Pearson's Chi-squared test reveal a significant association between age subgroups (early-onset below 35, early-onset 36-49, and average-onset) and BMI categories, with an X-squared value of 34.234 and a p-value of 6.061e-06. This indicates a strong relationship between the age at colorectal cancer onset and BMI. However, it is important to note the warning about the Chi-squared approximation, suggesting caution due to potential small sample sizes in certain cells. To further investigate this relationship, a multinomial logistic regression model was applied, comparing the odds of being in the early-onset 36-49 years and early-onset below 35 years groups relative to the average-onset group. The model uses the average-onset group as the reference category.
+
+For the early-onset 36–49 group, each one-unit increase in BMI reduced the odds of belonging to this group (OR = 0.987). In the younger early-onset group (\<35 years), the effect was stronger, with each unit increase in BMI significantly lowering the odds (OR = 0.914). Higher BMI is associated with a reduced likelihood of being in either early-onset subgroup, particularly for individuals below 35 years, when compared to the average-onset group. These results are consistent with the binary logistic regression model, but the multinomial model provides additional insight by differentiating the effects of BMI on the two early-onset subgroups, with a stronger association observed for the younger, below-35 subgroup.
+
+-   **Interaction assessment:**
+
+```{r warning = FALSE}
+
+## binominal logistic regression analysis of age groups and BMI - interaction terms (hypertension, smoking, diabetes mellitus)
+
+#print(age_groups_fit_glm1)
+exp(cbind(OR = coef(age_groups_fit_glm1), CI = confint(age_groups_fit_glm1))) ## Odds ratios along with 95% confidence intervals
+
+```
+
+In a logistic regression model including interactions between BMI categories and clinical factors, hypertension and smoking status emerged as significant predictors. Hypertensive individuals were significantly less likely to belong to early-onset groups (p \< 0.001). Smoking status also had a notable impact, with never-smokers (OR = 16.59) and former smokers (OR = 8.49) showing significantly higher odds of early-onset colorectal cancer compared to current smokers. Diabetes mellitus history did not significantly influence age group, and most interaction terms were non-significant, except for a marginal effect of obesity and smoking (p = 0.116). These findings suggest a strong independent role for hypertension and smoking but limited moderating effects between BMI and these factors.
+
+The model overall showed reasonable fit, with a reduction in deviance from the null model and an AIC of 1676. Nevertheless, wide confidence intervals, particularly for the Underweight group and several interaction terms, suggest potential issues with small sample sizes or extreme values in some categories. These results warrant caution in interpretation, especially for underrepresented subgroups.
+
+```{r warning=FALSE}
+## binominal logistic regression analysis of age groups and BMI - interaction terms sex and race category
+
+#print(age_groups_fit_glm2)
+exp(cbind(OR = coef(age_groups_fit_glm2), CI = confint(age_groups_fit_glm2))) ## Odds ratios along with 95% confidence intervals
+
+```
+
+In the second interactions logistic regression model, examining the relationship between BMI categories, sex, race, and their interactions with age groups, BMI categories showed no significant independent effects on age groups, but interactions with sex and race showed marginal findings. Obese males had higher odds of early-onset cancer than normal-weight females. Race significantly influenced age group classification, with Black individuals having lower odds of being in the early-onset group compared to other races. However, limited data for certain racial categories, such as Native American/Alaska Native, hindered reliable estimates, stressing the need for larger samples in future studies.The model’s residual deviance (1817) and AIC (1851) indicate that the fit to the data was reasonable, though small sample sizes in specific subgroups suggest that there is room for improvement, particularly in those racial categories.
+
+```{r warning=FALSE}
+
+## binominal logistic regression analysis of age groups and BMI - interaction terms: tumor grade, stage at diagnosis, primary tumor location and MSI score
+
+#print(age_groups_fit_glm3)
+exp(cbind(OR = coef(age_groups_fit_glm3), CI = confint(age_groups_fit_glm3))) ## Odds ratios along with 95% confidence intervals
+```
+
+The logistic regression model of age groups and BMI, examining the potential interactions with tumor grade, stage at diagnosis, primary tumor location, and MSI score, provided additional insights. Poorly differentiated tumors were more strongly associated with early-onset cancer, while individuals with right-sided tumors had lower odds of early-onset (OR = 0.56, p = 0.016). Interactions between BMI and tumor grade suggested potential moderating effects, such as lower odds of early-onset for obese individuals with moderately poorly differentiated tumors (OR = 0.63), though these were not statistically significant. MSI scores and stage at diagnosis showed limited predictive value, with most interactions non-significant.
+
+The model also encountered issues with certain BMI and tumor grade interactions where some coefficients could not be defined due to singularities, particularly for underweight individuals in various subgroups. This highlights data limitations that need to be addressed. The residual deviance and AIC suggest that while the model fits the data reasonably well, there is room for further refinement. In general, the findings suggest that tumor characteristics, particularly grade and location, may play a more substantial role than BMI in determining the age of onset.
+
+```{r warning=FALSE}
+## Comparing the models
+
+AIC(age_groups_fit_glm1, age_groups_fit_glm2, age_groups_fit_glm3)
+BIC(age_groups_fit_glm1, age_groups_fit_glm2, age_groups_fit_glm3)
+
+```
+
+Among the three logistic regression models evaluated (age_groups_fit_glm1, age_groups_fit_glm2, and age_groups_fit_glm3), age_groups_fit_glm1 achieved the best balance of simplicity and predictive accuracy, with the lowest AIC (1675.579) and BIC (1780.449). More complex models, while detailed, did not sufficiently improve predictive power to justify the added complexity, as evidenced by higher AIC/BIC values, such as the AIC of 1851.243 for age_groups_fit_glm2. Thus, the simplest model was selected for cross-validation and further analysis.
+
+-   **Cross-validation:**
+
+```{r warning=FALSE}
+
+## Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables - using the glm1 model that was considered to have the best balance between model fit and complexity, being the most reliable one, with AUC curve
+vif(age_groups_fit_glm1)
+
+print(lr_cv_auc)
+
+print(cross.val.glm1.roc) ## ROC Curve for Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables
+
+print(precision_recall_f1) ##  Precision, Recall, and F1 Score
+
+```
+
+The cross-validated logistic regression model (glm1) achieved an AUC of 0.7158, reflecting moderate discriminatory ability between early- and average-onset colorectal cancer. The model’s accuracy was 68.62%, and the Kappa statistic indicated moderate agreement (0.3662). Nevertheless, multicollinearity emerged as a concern, particularly for BMI categories and interaction terms (VIF = 8.76 × 10⁹ for BMI categories). This suggests significant overlap between BMI and other predictors, such as smoking and hypertension history, warranting further investigation. The ROC curve for the cross-validated logistic regression model was also analyzed. While the model performed reasonably well, the high VIF values and moderate AUC highlight areas for improvement. Future refinement, including larger datasets and additional predictors, could enhance the model’s reliability and predictive power.
+
+-   **Logistic Regression Section Take-away:**
+
+**In general, BMI demonstrates a significant but modest association with colorectal cancer onset. Higher BMI, particularly in overweight and obese individuals, is associated with later onset, with the effect most pronounced in the youngest (\<35 years) subgroup. Nonetheless, BMI alone has limited predictive power, as shown by low AUC values (\<0.56 in univariate models) and multicollinearity concerns in more complex models. Other factors, including smoking history, hypertension, and tumor characteristics, play more substantial roles in distinguishing between early- and average-onset cancer. The simplest model (glm1) provides a reasonable fit and forms the basis for future work, but challenges such as small sample sizes in subgroups and multicollinearity should be addressed to improve predictions.**
+
+# Discussion and limitations:
+
+The rising incidence of early-onset colorectal cancer (EO-CRC) is a growing public health concern, with factors such as lifestyle and obesity potentially contributing to earlier disease onset. This study aimed to examine the relationship between Body Mass Index (BMI) and age at diagnosis in colorectal cancer patients, particularly whether higher BMI is linked to earlier disease onset. Our findings reveal a complex interaction between BMI, age at diagnosis, and other clinical factors, offering valuable insights into the evolving trends in colorectal cancer epidemiology.
+
+Our descriptive analysis indicated that EO-CRC patients generally had lower BMI compared to average-onset (AO) cases, with underweight and normal-weight individuals diagnosed at younger ages. This finding contrasts with our initial hypothesis, which suggested that higher BMI would correlate with earlier disease onset.
+
+The linear regression analysis revealed a statistically significant but weak positive relationship between BMI and age at diagnosis. Each unit increase in BMI was associated with a slight delay in diagnosis, but the low R-squared value (0.00968) suggests that BMI alone explains little of the variation in age at diagnosis. This highlights the importance of other factors, such as genetic predispositions, environmental influences, and lifestyle behaviors, in determining the age of onset. Chronic conditions like hypertension and diabetes, which are more common in older individuals, may also contribute to later diagnoses and may act as cumulative risk factors.
+
+In the logistic regression analysis, we found that higher BMI categories were associated with a lower likelihood of early-onset colorectal cancer, especially in the youngest EO subgroup. Obese and overweight individuals had significantly lower odds of developing EO-CRC compared to those with normal BMI. These findings align with the linear regression results, reinforcing the idea that higher BMI is associated with later diagnosis. This challenges the simplistic view that obesity universally accelerates colorectal cancer development and highlights the multifactorial nature of disease onset. While obesity is a known risk factor for colorectal cancer, factors such as chronic inflammation, insulin resistance, altered gut microbiota, body fat distribution, diet, and metabolic syndrome might interact in complex ways to influence the development of EOCRC. Our analysis was limited in scope, lacking detailed data on these variables, which are crucial for understanding the full picture. A larger dataset with more comprehensive information would be necessary to explore these relationships further and clarify the role of BMI in EOCRC.
+
+Hypertension, diabetes, and smoking history also emerged as significant contributors to the age at diagnosis. Hypertension, in particular, was strongly associated with later diagnoses, with hypertensive individuals diagnosed at significantly older ages. The interaction between BMI and these comorbidities suggests that broader metabolic and lifestyle factors influence the relationship between BMI and colorectal cancer onset.
+
+While these findings are important, there are several limitations to this analysis. The sample size is relatively small, which may limit the statistical power of the study. Important data, such as detailed dietary habits, genetic predispositions, and treatment histories, were not available, which may introduce confounding variables that could influence the observed relationships. Furthermore, the dataset may not fully represent all demographic groups, limiting the generalizability of the results. The age-related nature of variables like hypertension and diabetes also requires careful consideration, as these interactions may not be fully captured in our models. Also, since this is an observational study, our findings should be interpreted as associations rather than causal relationships.
+
+# Conclusion
+
+**The relationship between BMI and colorectal cancer onset is complex. This analysis found that higher BMI was associated with a later age of diagnosis, with overweight and obese individuals being less likely to develop early-onset colorectal cancer, particularly before age 35. However, this does not imply causation. While obesity is often considered a risk factor, this study did not find evidence linking it to earlier onset. Obese patients were diagnosed at older ages and with less aggressive tumors, suggesting that body weight's role extends beyond BMI alone and involves factors like inflammation and metabolic syndrome. Larger, more detailed studies are needed to clarify BMI’s role in colorectal cancer.**
+
+# References:
