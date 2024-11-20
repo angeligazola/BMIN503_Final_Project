@@ -1,9 +1,9 @@
 # BMI and Colorectal Cancer  
 **by Antonia Angeli Gazola as part of her Master in Biomedical Informatics studies at the University of Pennsylvania**  
 
-**Course:** 5030-401 202430 Data Science For Biomedical Informatics
-**Course Professor:** Prof. Dr. Blanca Himes  
-**Advisors:** Prof. Dr. Gary Weissman & Nicholas Bishop, BA
+- **Course:** 5030-401 202430 Data Science For Biomedical Informatics
+- **Course Professor:** Prof. Dr. Blanca Himes  
+- **Advisors:** Prof. Dr. Gary Weissman & Nicholas Bishop, BA
 
 This repository contains the work associated with my final project for the **5030 Data Science** course as part of the **Master's in Biomedical Informatics** program at the **Perelman School of Medicine**, **University of Pennsylvania**. The project focuses on investigating the association between **Body Mass Index (BMI)** and the **age of diagnosis of colorectal cancer**.
 
