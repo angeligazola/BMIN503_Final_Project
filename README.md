@@ -3,7 +3,7 @@
 
 - **Course:** 5030-401 202430 Data Science For Biomedical Informatics
 - **Course Professor:** Prof. Dr. Blanca Himes  
-- **Advisors:** Prof. Dr. Gary Weissman & Nicholas Bishop, BA
+- **Advisors:** Prof. Dr. Gary Weissman and Nicholas Bishop, BA
 
 This repository contains the work associated with my final project for the **5030 Data Science** course as part of the **Master's in Biomedical Informatics** program at the **Perelman School of Medicine**, **University of Pennsylvania**. The project focuses on investigating the association between **Body Mass Index (BMI)** and the **age of diagnosis of colorectal cancer**.
 
@@ -13,7 +13,7 @@ The goal of this project is to explore whether higher BMI is associated with an 
 
 The project's analysis is divided into three main sections:
 
-1. **Descriptive Analysis**
+1. **Descriptive Statistics**
 2. **Linear Regressions**
 3. **Logistic Regressions**
 
@@ -21,7 +21,7 @@ The project's report is being written in R language in a quarto document in RStu
 
 ### Repository Overview
 
-This repository includes drafts for my final project, as follows:
+This repository includes:
 
 - **README.md**: overview of the project and repository contents.  
 - **final_project_ANGELIGAZOLA_110524.qmd**: early draft of the project overview and introduction.  
