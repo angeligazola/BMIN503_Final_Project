@@ -1,4 +1,4 @@
-# BMI and Colorectal Cancer  
+# Exploring the Association Between BMI and Early-Onset Colorectal Cancer
 **by Antonia Angeli Gazola as part of her Master in Biomedical Informatics studies at the University of Pennsylvania**  
 
 - **Course:** 5030-401 202430 Data Science For Biomedical Informatics
