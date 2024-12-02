@@ -24,9 +24,10 @@ The project's report is being written in R language in a quarto document in RStu
 This repository includes:
 
 - **README.md**: overview of the project and repository contents.  
-- **final_project_ANGELIGAZOLA_110524.qmd**: early draft of the project overview and introduction.  
-- **final_project_ANGELIGAZOLA.qmd**: latest draft with all project sections, including methods and results. 
+- **5030_final_project_presentation_Antonia_ANGELI_GAZOLA.pptx**: short power point slide show presentation of my project for class
+- **final_project_ANGELIGAZOLA.qmd**: latest draft with all project sections 
 - **final_project_ANGELIGAZOLA.html**: rendered HTML version of the latest draft for better visualization.
+- **5030_references.bib**: bibTeX file with references used to write the report, created through Mendeley.
 
 
 ### Guidance
@@ -53,5 +54,5 @@ Open the `final_project_ANGELIGAZOLA.html` file in your web browser to view the 
 - #### Run Quarto Files Locally:
 1. Install **R and RStudio** on your system. Follow the installation instructions on the [RStudio website](https://rstudio-education.github.io/hopr/starting.html).
 2. Clone this repository to your local computer using Git.
-3. Use **RStudio** to open the .qmd file and explore the project.
+3. Use **RStudio** to open the .qmd file and explore the project. To be able to see the references when rendering, please download the .bib reference file as well.
 
