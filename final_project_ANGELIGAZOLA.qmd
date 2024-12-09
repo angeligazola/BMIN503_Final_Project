@@ -3,9 +3,9 @@ title: "Exploring the Association between BMI and Early-Onset Colorectal Cancer"
 subtitle: "BMIN503/EPID600 Final Project"
 author: "Antonia Angeli Gazola"
 format: html
-editor: visual
 number-sections: true
 embed-resources: true
+editor: visual
 bibliography: 5030_references.bib
 ---
 
@@ -38,7 +38,7 @@ This research integrates insights from epidemiology, data science, biostatistics
 
 For this project, I am using the MSK Colorectal Cancer dataset (MSK, JNCI 2021) from cBioPortal, which includes targeted sequencing data for 1,516 samples from 818 patients with EO and 698 patients with average-onset (AO) CRC. This dataset provides patient information, including BMI, age at diagnosis, tumor characteristics, and relevant medical history (Reference: PMID: 34405229).[@Cercek2021]
 
-The analysis will be structured in three main sections: descriptive statistics, linear regression analysis and logistic regression analysis. During the methodology, each step of the analysis will be described, keeping the description of the results to the {#sec-results} section
+The analysis will be structured in three main sections: descriptive statistics, linear regression analysis and logistic regression analysis. During the methodology, each step of the analysis will be described, keeping the description of the results to the results section
 
 ## Descriptive Statistics:
 
@@ -50,24 +50,20 @@ This section contains the initial exploratory analysis to understand data distri
 
 ## Adding the packages that will be used
 
-library(vroom)
-library(dplyr)
-library(gtsummary)
-library(gt)
-library(ggplot2)
-library(gridExtra)
-library(patchwork)
-library(pROC)
-library(nnet)
-library(tidymodels)
-library(modelsummary)
-library(naniar)
-library(plotly)
-library(car)
-library(yardstick)
-library(rsample)
-library(tune)
-library(workflows) 
+library(vroom) ## fast reading of dataset
+library(dplyr) ## data manipulation functions
+library(naniar) ## handling and visualizing missing data
+library(gtsummary) ## descriptive analysis, summary tables
+library(gt) ## tables
+library(ggplot2) ## plotting
+library(gridExtra) ## combining plots into single figure
+library(patchwork) ## combining plots
+library(pROC) ## ROC curve, model assessment
+library(nnet) ## multinominal modeling
+library(tidymodels) ## modeling, metrics, precision recall, AUC/ROC, libraries yardstick, rsample, tune and workflows are part of tidymodels
+library(modelsummary) ## summarizing model findings
+library(plotly) ## interactive plots
+library(car) ## regression metrics/diagnosis/multicollinearity
 
 ```
 
@@ -828,7 +824,7 @@ roc_data <- lr_fit_cv |>
   roc_curve(`Age Groups`, .pred_AO)
 
 cross.val.glm1.roc <- autoplot(roc_data) + 
-  labs(title = "ROC Curve for Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables")
+  labs(title = "ROC Curve: Cross-Validated Logistic Regression Model on Age Groups and BMI categories and Potential Interaction Variables")
 
 ## Calculating precision, recall, and F1 Score
 
@@ -846,7 +842,7 @@ Model performance was assessed using the area under the receiver operating chara
 
 # Results {#sec-results}
 
-## **Descriptive Statistics**
+## Descriptive Statistics:
 
 -   **General Summary**
 
@@ -867,6 +863,7 @@ print(NA_data_plot) ## visualization of missing data in dataset
 print(heatmap_NA_data) ## heat map for visualization of missing data in dataset
 
 ```
+
 
 The plot, titled "Missing Data by Variable, illustrates the extent of missing data across different variables. The variables with the most missing values are Metastatic Site and First Line Treatment at Metastasis, consistent with the heatmap that visualizes the proportions of missing data. The dataset is largely complete, with 94% of the data present and 6% missing, primarily concentrated in a small subset of variables.
 
@@ -908,9 +905,12 @@ While median survival months post metastasis diagnosis do not vary significantly
 
 -   **Descriptive Statistics Section Takeaway**
 
+
+
 **The descriptive analysis of the MSK Colorectal dataset highlights significant differences in demographic, clinical, and molecular characteristics between EO and AO colorectal cancer patients. EO patients tend to be younger, leaner, and have fewer comorbidities like hypertension and diabetes compared to AO patients, who exhibit higher BMI levels and more age-associated conditions. Despite being leaner, EO patients present with more aggressive tumor features, such as a higher prevalence of poorly differentiated tumors, shorter overall survival post metastasis (23 months vs. 40 months in AO), and more frequent rectal tumor locations. BMI emerges as an influential factor in age of onset, with normal and underweight individuals more likely to be diagnosed at a younger age, whereas overweight and obese individuals are predominantly diagnosed later. The significant associations between BMI categories and clinical characteristics, as well as the distinct profiles of EO and AO patients, emphazise the need for age- and BMI-specific considerations in colorectal cancer prevention, management, and treatment strategies.**
 
-## **Linear Regression Analysis**
+
+## Linear Regression Analysis:
 
 -   **Basic Linear Model**:
 
@@ -921,7 +921,6 @@ coef(test.fit) ## Coefficients of the model
 confint(test.fit) ## Confidence intervals for the coefficients
 par(mfrow = c(2, 2)) 
 plot(test.fit)  ## Diagnostic plots for model assessment.
-#print(scatter_plot_age_BMI) ## scatter plot with fitted regression line of linear relationship between age at diagnosis and BMI
 scatter_plot_age_BMI_plotly(MSK_colorectal_dataset_rename) ## interactive scatter plot with fitted regression line of linear relationship between age at diagnosis and BMI
 print(paste("Pearson correlation:", correlation)) ## pearson correlation 
 print(paste("Spearman correlation:", correlation_spearman))  ##  spearman correlation 
@@ -998,17 +997,20 @@ print(anova_results) ## ANOVA comparing the interaction term model and the multi
 
 ```
 
-The interaction analysis indicates that adding interaction terms between BMI and various health-related factors (hypertension history, smoking history, diabetes history, sex, race, tumor grade, stage at diagnosis, primary tumor location, and MSI score) does not provide a significant improvement to the model’s explanatory power. The ANOVA test comparing the interaction model (Model 2) to the expanded multivariate model (Model 1) yielded an F-statistic of 1.4216 (p = 0.1173). Since this p-value is greater than 0.05, we fail to reject the null hypothesis, indicating that the inclusion of these interaction terms does not result in a statistically significant improvement in the model. Although the Residual Sum of Squares (RSS) decreases slightly from 149,542 in Model 1 to 146,647 in Model 2, this reduction is not large enough to be considered statistically significant, meaning that BMI's relationship with Age at Diagnosis remains largely consistent, regardless of the other factors. Therefore, BMI does not appear to interact significantly with the other variables to modify its effect on Age at Diagnosis. These findings suggest that BMI's role in predicting Age at Diagnosis is independent of the health-related and demographic factors included in the model.
+The interaction analysis indicates that adding interaction terms between BMI and various health-related factors (hypertension history, smoking history, diabetes history, sex, race, tumor grade, stage at diagnosis, primary tumor location, and MSI score) does not provide a significant improvement to the model’s explanatory power. The ANOVA test comparing the interaction model (Model 2) to the expanded multivariate model (Model 1) yielded an F-statistic of 1.4216 (p = 0.1173), indicating that the inclusion of these interaction terms does not result in a statistically significant improvement in the model. Although the Residual Sum of Squares (RSS) decreases slightly from 149,542 in Model 1 to 146,647 in Model 2, this reduction is not large enough to be considered statistically significant, meaning that BMI's relationship with Age at Diagnosis remains largely consistent, regardless of changing the factors from potential predictors to potential interaction terms.
 
 -   **Linear Regression Section Take-away:**:
 
-**Building on patterns from the descriptive analysis, the linear regression models show that while BMI is a statistically significant predictor of Age at Diagnosis, its effect size is small and overshadowed by more influential factors, such as hypertension history, diabetes history, and tumor-specific characteristics like grade and location. Hypertension history emerges as the strongest predictor, delaying diagnosis by over a decade, followed by smaller but notable effects from diabetes history and tumor biology.The moderate explanatory power of the expanded multivariate model (R-squared = 27.92%) suggests that additional factors contribute to variations in age of diagnosis. Chronic comorbidities and aggressive tumor characteristics are strongly associated with later in life diagnosis.**
+**Building on patterns from the descriptive analysis, the linear regression models show that while BMI is a statistically significant predictor of Age at Diagnosis, its effect size is small and overshadowed by more influential factors, such as hypertension history, diabetes history, and tumor-specific characteristics like grade and location. Hypertension history emerges as the strongest predictor, delaying diagnosis by over a decade, followed by smaller but notable effects from diabetes history and tumor biology. The moderate explanatory power of the expanded multivariate model (R-squared = 27.92%) suggests that additional factors contribute to variations in age of diagnosis. Chronic comorbidities and aggressive tumor characteristics are strongly associated with later in life diagnosis.**
 
-## **Logistic Regression Analysis:**
+
+## Logistic Regression Analysis:
 
 The logistic regression can help clarify whether the observed positive association between BMI and older age groups in the linear regression analysis is due to confounding factors or if it represents a real relationship, providing a better understanding of the complex interactions between BMI, age, and EO CRC.
 
+
 -   **Basic Logistic Regression**:
+
 
 ```{r warning=FALSE}
 
@@ -1127,11 +1129,11 @@ The cross-validated logistic regression model (glm1) achieved an AUC of 0.7158, 
 
 -   **Logistic Regression Section Take-away:**
 
-**In general, BMI demonstrates a significant but modest association with CRC onset. Higher BMI, particularly in overweight and obese individuals, is associated with later onset, with the effect most pronounced in the youngest (\<35 years) subgroup. Nonetheless, BMI alone has limited predictive power, as shown by low AUC values (\<0.56 in univariate models) and multicollinearity concerns in more complex models. Other factors, including smoking history, hypertension, and tumor characteristics, play more substantial roles in distinguishing between EO and AO cancer. The simplest model (glm1) provides a reasonable fit and forms the basis for future work, but challenges such as small sample sizes in subgroups and multicollinearity should be addressed to improve predictions.**
+**In general, BMI demonstrates a significant but modest association with CRC onset. Higher BMI, particularly in overweight and obese individuals, is associated with later onset, with the effect most pronounced in the youngest (\<35 years) subgroup. Nonetheless, BMI alone has limited predictive power, as shown by low AUC values (\<0.56 in univariate models) and multicollinearity concerns in more complex models. Other factors, including smoking history, hypertension, and tumor characteristics, play more substantial roles in distinguishing between EO and AO cancer. The simplest model (glm1) provides a reasonable fit and forms the basis for future work, but challenges such as small sample sizes in subgroups and multicollinearity have to be addressed to improve predictions.**
 
-# Discussion and limitations:
+# Discussion and limitations {#sec-discussion}
 
-The rising incidence of EO CRC is a growing public health concern, with factors such as lifestyle and obesity potentially contributing to earlier disease onset.[@Lazarova2021], [@Low2020], [@Li2021] This study aimed to examine the relationship between Body Mass Index (BMI) and age at diagnosis in CRC patients, particularly whether higher BMI is linked to earlier disease onset. Our findings reveal a complex interaction between BMI, age at diagnosis, and other clinical factors, offering valuable insights into the evolving trends in CRC epidemiology.
+The rising incidence of EO CRC is a growing public health concern, with factors such as lifestyle and obesity potentially contributing to earlier disease onset.[@Lazarova2021], [@Low2020], [@Li2021] This study aimed to examine the relationship between BMI and age at diagnosis in CRC patients, particularly whether higher BMI is linked to earlier disease onset. Our findings reveal a complex interaction between BMI, age at diagnosis, and other clinical factors, offering valuable insights into the evolving trends in CRC epidemiology.
 
 Our descriptive analysis indicated that EO CRC patients generally had lower BMI compared to AO cases, with underweight and normal-weight individuals diagnosed at younger ages. This finding contrasts with our initial hypothesis, which suggested that higher BMI would correlate with earlier disease onset.
 
@@ -1143,9 +1145,12 @@ Hypertension, diabetes, and smoking history also emerged as significant contribu
 
 While these findings are important, there are several limitations to this analysis. The sample size is relatively small, which may limit the statistical power of the study. Important data, such as detailed dietary habits, genetic predispositions, and treatment histories, were not available, which may introduce confounding variables that could influence the observed relationships. Furthermore, the dataset may not fully represent all demographic groups, limiting the generalizability of the results. The age-related nature of variables like hypertension and diabetes also requires careful consideration, as these interactions may not be fully captured in our models. Also, since this is an observational study, our findings should be interpreted as associations rather than causal relationships.
 
-# Conclusion
+# Conclusion {#sec-conclusion}
 
 **The relationship between BMI and CRC onset is complex. This analysis found that higher BMI was associated with a later age of diagnosis, with overweight and obese individuals being less likely to develop EO CRC, particularly before age 35. However, this does not imply causation. While obesity is often considered a risk factor, this study did not find evidence linking it to earlier onset. Obese patients were diagnosed at older ages and with less aggressive tumors, suggesting that body weight's role extends beyond BMI alone and involves factors like inflammation and metabolic syndrome. Larger, more detailed studies are needed to clarify BMI’s role in CRC.**
 
-# References:
+# Acknowledgements {#sec-acknowledgement}
 
+I would like to thank my advisors for this project, Dr. Gary Weissman and Nicholas Bishop, from the PAIR Center at the University of Pennsylvania, who reviewed my project and provided important feedback and insights on it. Also, I would like to thank the course director Dr. Himes and the TAs Anastasia Lucas and Jakob Woerner for all the teaching and support during the semester.
+
+# References {#sec-references}
