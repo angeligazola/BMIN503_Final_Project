@@ -25,8 +25,8 @@ This repository includes:
 
 - **README.md**: overview of the project and repository contents.  
 - **5030_final_project_presentation_Antonia_ANGELI_GAZOLA.pptx**: short power point slide show presentation of my project for class
-- **final_project_ANGELIGAZOLA.qmd**: latest draft with all project sections 
-- **final_project_ANGELIGAZOLA.html**: rendered HTML version of the latest draft for better visualization.
+- **final_project_ANGELIGAZOLA.qmd**: final project quarto document with all project sections 
+- **final_project_ANGELIGAZOLA.html**: rendered HTML version of the final project for better visualization.
 - **5030_references.bib**: bibTeX file with references used to write the report, created through Mendeley.
 
 
@@ -38,21 +38,19 @@ My project advisors are:
 
 Their expertise has been instrumental in shaping the direction and execution of this project.
 
-### Next Steps
-
-- Refine project draft, incorporating feedback from peers and advisors
-- Reach a final version of the project.
-- **Final Submission:** The completed project will be uploaded to this repository by **12/13/24** (due date).
 
 ### Instructions for Viewing and Running the Project
 
-To view the latest draft of the project or to run the files locally, follow these instructions:
+To view the latest draft of the project or to open and run the files locally, follow these instructions:
 
 - #### View the Rendered HTML:
 Open the `final_project_ANGELIGAZOLA.html` file in your web browser to view the latest draft with full formatting and visualizations.
 
-- #### Run Quarto Files Locally:
+- #### Open and Run Quarto Files Locally:
 1. Install **R and RStudio** on your system. Follow the installation instructions on the [RStudio website](https://rstudio-education.github.io/hopr/starting.html).
 2. Clone this repository to your local computer using Git.
-3. Use **RStudio** to open the .qmd file and explore the project. To be able to see the references when rendering, please download the .bib reference file as well.
+3. Use **RStudio** to open the .qmd file and explore the project. 
+4. To be able to run the document, please download the dataset [MSK Colorectal Cancer dataset (MSK, JNCI 2021)](https://frontend.cbioportal.org/study/summary?id=crc_eo_2020) from cBioPortal,
+and keep it in your desktop area.
+5. To be able to see the references when rendering, please download the .bib reference file as well.
 
