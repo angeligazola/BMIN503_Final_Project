@@ -20,7 +20,7 @@ p {
 
 # Overview {#sec-overview}
 
-In my project, I aim to investigate the association between Body Mass Index (BMI) and the age of onset of colorectal cancer. Given the rising incidence of early-onset colorectal cancer and the potential role of lifestyle factors like diet and obesity, I plan to explore my hypothesis that higher BMI may be linked to an earlier onset of colorectal cancer in patients. To address this, I will analyze data from the Colorectal Cancer (MSK, JNCI 2021) dataset, available on cBioPortal, which includes detailed patient information.
+In my project, I aim to investigate the association between Body Mass Index (BMI) and the age of onset of colorectal cancer. Given the rising incidence of early-onset colorectal cancer and the potential role of lifestyle factors like diet and obesity, I plan to explore my hypothesis that higher BMI may be linked to an earlier onset of colorectal cancer in patients. To address this, I will analyze data from the Colorectal Cancer (MSK, JNCI 2021) dataset, available on cBioPortal, which includes detailed patient information. The analyses will include descriptive statistics, linear regression, and logistic regression, with a primary focus on the association between BMI and age at diagnosis. Secondarily, the analysis will explore relationships between BMI, age at diagnosis, and other variables, incorporating those as predictors and interactors in the models.
 
 To strengthen my approach, I consulted Dr. Gary Weissman, an Assistant Professor in Pulmonary and Critical Care Medicine and Informatics, who provided guidance on refining research questions, dataset selection, and data analysis methods from a clinical perspective. Nicholas Bishop, a Clinical Research Coordinator, offered valuable advice on methodological approaches to working with the dataset and data visualization techniques. Both were instrumental in shaping the project’s direction and execution.
 
@@ -864,7 +864,6 @@ print(heatmap_NA_data) ## heat map for visualization of missing data in dataset
 
 ```
 
-
 The plot, titled "Missing Data by Variable, illustrates the extent of missing data across different variables. The variables with the most missing values are Metastatic Site and First Line Treatment at Metastasis, consistent with the heatmap that visualizes the proportions of missing data. The dataset is largely complete, with 94% of the data present and 6% missing, primarily concentrated in a small subset of variables.
 
 -   **Summarizing data by Age Groups**
@@ -905,10 +904,7 @@ While median survival months post metastasis diagnosis do not vary significantly
 
 -   **Descriptive Statistics Section Takeaway**
 
-
-
 **The descriptive analysis of the MSK Colorectal dataset highlights significant differences in demographic, clinical, and molecular characteristics between EO and AO colorectal cancer patients. EO patients tend to be younger, leaner, and have fewer comorbidities like hypertension and diabetes compared to AO patients, who exhibit higher BMI levels and more age-associated conditions. Despite being leaner, EO patients present with more aggressive tumor features, such as a higher prevalence of poorly differentiated tumors, shorter overall survival post metastasis (23 months vs. 40 months in AO), and more frequent rectal tumor locations. BMI emerges as an influential factor in age of onset, with normal and underweight individuals more likely to be diagnosed at a younger age, whereas overweight and obese individuals are predominantly diagnosed later. The significant associations between BMI categories and clinical characteristics, as well as the distinct profiles of EO and AO patients, emphazise the need for age- and BMI-specific considerations in colorectal cancer prevention, management, and treatment strategies.**
-
 
 ## Linear Regression Analysis:
 
@@ -1003,14 +999,11 @@ The interaction analysis indicates that adding interaction terms between BMI and
 
 **Building on patterns from the descriptive analysis, the linear regression models show that while BMI is a statistically significant predictor of Age at Diagnosis, its effect size is small and overshadowed by more influential factors, such as hypertension history, diabetes history, and tumor-specific characteristics like grade and location. Hypertension history emerges as the strongest predictor, delaying diagnosis by over a decade, followed by smaller but notable effects from diabetes history and tumor biology. The moderate explanatory power of the expanded multivariate model (R-squared = 27.92%) suggests that additional factors contribute to variations in age of diagnosis. Chronic comorbidities and aggressive tumor characteristics are strongly associated with later in life diagnosis.**
 
-
 ## Logistic Regression Analysis:
 
 The logistic regression can help clarify whether the observed positive association between BMI and older age groups in the linear regression analysis is due to confounding factors or if it represents a real relationship, providing a better understanding of the complex interactions between BMI, age, and EO CRC.
 
-
 -   **Basic Logistic Regression**:
-
 
 ```{r warning=FALSE}
 
@@ -1151,6 +1144,6 @@ While these findings are important, there are several limitations to this analys
 
 # Acknowledgements {#sec-acknowledgement}
 
-I would like to thank my advisors for this project, Dr. Gary Weissman and Nicholas Bishop, from the PAIR Center at the University of Pennsylvania, who reviewed my project and provided important feedback and insights on it. Also, I would like to thank the course director Dr. Himes and the TAs Anastasia Lucas and Jakob Woerner for all the teaching and support during the semester.
+I would like to thank my advisors for this project, Dr. Gary Weissman and Nicholas Bishop, from the PAIR Center at the University of Pennsylvania, who reviewed my project and provided important feedback and insights on it. Also, I would like to thank the course director Prof. Dr. Blanca Himes and the TAs Anastasia Lucas and Jakob Woerner for all the teaching and support during the semester.
 
 # References {#sec-references}

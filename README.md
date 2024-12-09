@@ -17,6 +17,8 @@ The project's analysis is divided into three main sections:
 2. **Linear Regressions**
 3. **Logistic Regressions**
 
+The primary focus is in the association between BMI and age at diagnosis. Secondarily, the analysis will explore relationships between BMI, age at diagnosis, and other variables, incorporating those as predictors and interactors in the models.
+
 The project's report is being written in R language in a quarto document in RStudio, containing the following structure: overview, introduction, methods, results, discussion and limitations, conclusion and references.
 
 ### Repository Overview
